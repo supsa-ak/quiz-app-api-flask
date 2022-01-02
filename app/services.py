@@ -1,5 +1,5 @@
 from sqlalchemy.orm.session import sessionmaker
-from app.models import QuestionMaster, QuizInstance, QuizMaster, QuizQuestions, UserMaster, UserResponses, UserSession
+from app.models import QuestionMaster, QuizInstance, QuizMaster, QuizQuestions, UserMaster, UserResponses
 from app import db
 import uuid
 from flask import session

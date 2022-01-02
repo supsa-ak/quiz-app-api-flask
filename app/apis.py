@@ -1,10 +1,14 @@
 from app.models import *
 from app import *
+from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource
 from flask_apispec.views import MethodResource
 from flask_apispec import marshal_with, doc, use_kwargs
+from flask_apispec.extension import FlaskApiSpec
 from app.schemas import *
 from app.services import *
+from datetime import datetime
+import json 
 
 """
 [Sign Up API] : Its responsibility is to perform the signup activity for the user.
@@ -13,7 +17,7 @@ from app.services import *
 class SignUpAPI(MethodResource, Resource):
     def post(self):
         try:
-            c = Customer(name=request.json['name'], username=request.json['username'], password=request.json['password'], level=request.json['level'])
+            c = UserMaster(name=request.json['name'], username=request.json['username'], password=request.json['password'], is_admin=request.json['is_admin'], is_active=1)
             db.session.add(c)
             db.session.commit()
             return {"message": 'customer created with name '+request.json['name']}, 201
@@ -22,23 +26,64 @@ class SignUpAPI(MethodResource, Resource):
 
 api.add_resource(SignUpAPI, '/signup')
 docs.register(SignUpAPI)
+"""
+{
+    "name":"sak",
+    "username":"sak",
+    "password":"123",
+    "is_admin":1
+}
+"""
 
 """
 [Login API] : Its responsibility is to perform the login activity for the user and 
 create session id which will be used for all subsequent operations.
 """
 class LoginAPI(MethodResource, Resource):
+    def post(self):
+        try:
+            if session['username']:
+                pass
+        except:
+            session['username'] = ""
 
-            
+        if session['username']:
+            return {"message": 'Already Logged in as '+ session['username']}, 200
+        try:
+            uname = request.json['username']
+            pword = request.json['password']
+            if UserMaster.query.filter_by(username=uname).first():
+                stud = UserMaster.query.filter_by(username=uname).first()
+                if UserMaster.query.get(stud.user_id).password == pword:
+                    
+                    session['username'] = uname
+                    
+                    return {"message": 'Successfully Logged in as '+ uname}, 201
+                else:
+                    return  {"message": 'Incorrect Username or Password'}, 404
+            else:
+                return  {"message": 'Incorrect Username or Password'}, 404
+        except:
+                return  {"message": 'Incorrect Username or Password'}, 404
 
 api.add_resource(LoginAPI, '/login')
 docs.register(LoginAPI)
-
+"""
+{
+    "username":"sak",
+    "password":"123"
+}
+"""
 """
 [Logout API] : Its responsibility is to perform the logout activity for the user.
 """
 class LogoutAPI(MethodResource, Resource):
-   pass
+    def get(self):      
+        session['username'] = None
+        return {"message":"User Logged Out"}
+    def post(self):      
+        session['username'] = None
+        return {"message":"User Logged Out"}
             
 
 api.add_resource(LogoutAPI, '/logout')
@@ -49,18 +94,56 @@ docs.register(LogoutAPI)
 Admin has only the rights to perform this activity.
 """
 class AddQuestionAPI(MethodResource, Resource):
-    pass
-
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            q = QuestionMaster(question=request.json['question'], choice1=request.json['choice1'], choice2=request.json['choice2'], choice3=request.json['choice3'], choice4=request.json['choice4'],answer=request.json['answer'],marks=request.json['marks'],remarks=request.json['remarks'])
+            db.session.add(q)
+            db.session.commit()
+            return {"message": 'Question added Successfully'}, 201
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 api.add_resource(AddQuestionAPI, '/add.question')
 docs.register(AddQuestionAPI)
-
+"""
+{
+    "question":"what is computer",
+    "choice1":"machine",
+    "choice2":"car",
+    "choice3":"animal",
+    "choice4":"plant",
+    "answer":"1",
+    "marks":"5",
+    "remarks":"computer is machine"
+}
+"""
 """
 [List Questions API] : Its responsibility is to list all questions present activly in the question bank.
 Here only Admin can access all the questions.
 """
 class ListQuestionAPI(MethodResource, Resource):
-    pass
+    def get(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            all_questions = QuestionMaster.query.all()
+            params = []
+            for i in all_questions:
+                question_info = {"question_id":i.question_id, "question":i.question, "choice1":i.choice1, "choice2":i.choice2, "choice3":i.choice3, "choice4":i.choice4, "marks":i.marks, "answer":i.answer, "remarks":i.remarks, "created_ts":i.created_ts, "updated_ts":i.updated_ts}
+                params.append(question_info)
+            return params, 200
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 
 api.add_resource(ListQuestionAPI, '/list.questions')
@@ -70,12 +153,32 @@ docs.register(ListQuestionAPI)
 [Create Quiz API] : Its responsibility is to create quiz and only admin can create quiz using this API.
 """
 class CreateQuizAPI(MethodResource, Resource):
-    pass
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            q = QuizMaster(quiz_name=request.json['quiz_name'], question_id=request.json['question_id'])
+            
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 
 api.add_resource(CreateQuizAPI, '/create.quiz')
 docs.register(CreateQuizAPI)
-
+"""
+{
+    "quiz_name":"quiz name one",
+    "question_id":[
+        2,
+        3,
+        4,
+        6
+    ]
+}
 """
 [Assign Quiz API] : Its responsibility is to assign quiz to the user. Only Admin can perform this API call.
 """

@@ -1,4 +1,4 @@
-from flask import Flask, session
+from flask import Flask, session, request, jsonify
 from apispec import APISpec
 from flask_restful import Api
 from apispec.ext.marshmallow import MarshmallowPlugin
@@ -17,10 +17,13 @@ Thsi will configure the swagger docs for the application
 from app.models import *
 
 application.config['SESSION_TYPE'] = 'sqlalchemy'
+application.config['SESSION_SQLALCHEMY_TABLE'] = 'user_session'
 application.config['SESSION_SQLALCHEMY'] = db
 
 sess = Session(application)
 api = Api(application)  # Flask restful wraps Flask app around it.
+
+# db.create_all()
 
 application.config.update({
     'APISPEC_SPEC': APISpec(
