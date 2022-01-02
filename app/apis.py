@@ -5,6 +5,7 @@ from flask_restful import Resource
 from flask_apispec.views import MethodResource
 from flask_apispec import marshal_with, doc, use_kwargs
 from flask_apispec.extension import FlaskApiSpec
+from sqlalchemy import desc
 from app.schemas import *
 from app.services import *
 from datetime import datetime
@@ -252,7 +253,7 @@ class ViewQuizAPI(MethodResource, Resource):
 
 api.add_resource(ViewQuizAPI, '/view.quiz')
 docs.register(ViewQuizAPI)
-"""
+"""JSON FORMAT
 {
     "quiz_id":1
 }
@@ -347,7 +348,7 @@ class AttemptQuizAPI(MethodResource, Resource):
 
 api.add_resource(AttemptQuizAPI, '/attempt.quiz')
 docs.register(AttemptQuizAPI)
-"""
+"""JSON FORMAT
 {
     "quiz_id":1,
     "quiz_answers":[
@@ -365,10 +366,28 @@ docs.register(AttemptQuizAPI)
                         Admin has only acess to this functionality.
 """
 class QuizResultAPI(MethodResource, Resource):
-    pass
-
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            quiz_name = QuizMaster.query.filter_by(quiz_id=request.json['quiz_id']).first().quiz_name
+            quiz_intstances = QuizInstance.query.filter_by(quiz_id=str(request.json['quiz_id'])).order_by(desc(QuizInstance.score_achieved))
+            li = []
+            for i in quiz_intstances:
+                instace_info = {"user_id":i.user_id, "is_submitted":i.is_submitted, "score_achieved":i.score_achieved}
+                li.append(instace_info)
+            return {"Quiz Name":quiz_name, "Quiz Results":li}, 200
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 api.add_resource(QuizResultAPI, '/quiz.results')
 docs.register(QuizResultAPI)
-
-
+"""JSON FORMAT
+{
+    "quiz_id":1
+}
+"""
