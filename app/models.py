@@ -70,8 +70,9 @@ class QuizMaster(db.Model):
         created_ts = db.Column(db.DateTime, default=db.func.current_timestamp())
         updated_ts = db.Column(db.DateTime, default=db.func.now(), server_onupdate=db.func.now())
         
-        def __init__(self, quiz_name):
+        def __init__(self, quiz_name,  is_active):
                 self.quiz_name = quiz_name
+                self.is_active = is_active
             
 class QuizQuestions(db.Model):
         __tablename__ = 'quiz_questions'
@@ -85,9 +86,10 @@ class QuizQuestions(db.Model):
         created_ts = db.Column(db.DateTime, default=db.func.current_timestamp())
         updated_ts = db.Column(db.DateTime, default=db.func.now(), server_onupdate=db.func.now())
 
-        def __init__(self, quiz_id, question_id):
+        def __init__(self, quiz_id, question_id, is_active):
                 self.quiz_id = quiz_id
                 self.question_id = question_id
+                self.is_active = is_active
      
 class QuizInstance(db.Model):
         __tablename__ = 'quiz_instance'

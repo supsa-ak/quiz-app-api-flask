@@ -161,11 +161,18 @@ class CreateQuizAPI(MethodResource, Resource):
         uname = session['username'] 
         user_info = UserMaster.query.filter_by(username=uname).first()
         if user_info.is_admin == 1:
-            q = QuizMaster(quiz_name=request.json['quiz_name'], question_id=request.json['question_id'])
+            q = QuizMaster(quiz_name=request.json['quiz_name'], is_active=1)
+            db.session.add(q)
+
+            quiz_id = QuizMaster.query.filter_by(quiz_name=request.json['quiz_name']).first().quiz_id
+            for i in request.json['question_id']:           
+                p = QuizQuestions(quiz_id=quiz_id, question_id=i, is_active=1)
+                db.session.add(p)
             
+            db.session.commit()
+            return  {"message": 'Quiz created successfully'}, 200
         else:
             return {"message": 'Don\'t have required privileges'}, 404
-
 
 api.add_resource(CreateQuizAPI, '/create.quiz')
 docs.register(CreateQuizAPI)
@@ -179,6 +186,7 @@ docs.register(CreateQuizAPI)
         6
     ]
 }
+"""
 """
 [Assign Quiz API] : Its responsibility is to assign quiz to the user. Only Admin can perform this API call.
 """
