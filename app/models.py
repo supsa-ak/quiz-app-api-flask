@@ -105,9 +105,12 @@ class QuizInstance(db.Model):
         created_ts = db.Column(db.DateTime, default=db.func.current_timestamp())
         updated_ts = db.Column(db.DateTime, default=db.func.now(), server_onupdate=db.func.now())
         
-        def __init__(self, quiz_id, user_id):
+        def __init__(self, quiz_id, user_id, is_active, is_submitted, score_achieved):
                 self.quiz_id = quiz_id
                 self.user_id = user_id
+                self.is_active = is_active
+                self.is_submitted = is_submitted
+                self.score_achieved = score_achieved
             
 class UserResponses(db.Model):
         __tablename__ = 'user_responses'

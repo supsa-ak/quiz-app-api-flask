@@ -20,13 +20,13 @@ class SignUpAPI(MethodResource, Resource):
             c = UserMaster(name=request.json['name'], username=request.json['username'], password=request.json['password'], is_admin=request.json['is_admin'], is_active=1)
             db.session.add(c)
             db.session.commit()
-            return {"message": 'customer created with name '+request.json['name']}, 201
+            return {"message": 'User created with name '+request.json['name']}, 201
         except:
             return {'message': 'Something went wrong'}
 
 api.add_resource(SignUpAPI, '/signup')
 docs.register(SignUpAPI)
-"""
+"""JSON FORMAT
 {
     "name":"sak",
     "username":"sak",
@@ -68,7 +68,7 @@ class LoginAPI(MethodResource, Resource):
 
 api.add_resource(LoginAPI, '/login')
 docs.register(LoginAPI)
-"""
+"""JSON FORMAT
 {
     "username":"sak",
     "password":"123"
@@ -111,7 +111,7 @@ class AddQuestionAPI(MethodResource, Resource):
 
 api.add_resource(AddQuestionAPI, '/add.question')
 docs.register(AddQuestionAPI)
-"""
+"""JSON FORMAT
 {
     "question":"what is computer",
     "choice1":"machine",
@@ -176,7 +176,7 @@ class CreateQuizAPI(MethodResource, Resource):
 
 api.add_resource(CreateQuizAPI, '/create.quiz')
 docs.register(CreateQuizAPI)
-"""
+"""JSON FORMAT
 {
     "quiz_name":"quiz name one",
     "question_id":[
@@ -191,31 +191,98 @@ docs.register(CreateQuizAPI)
 [Assign Quiz API] : Its responsibility is to assign quiz to the user. Only Admin can perform this API call.
 """
 class AssignQuizAPI(MethodResource, Resource):
-    pass
-
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            for i in request.json['quiz_id']:
+                for j in request.json['user_id']:
+                    q = QuizInstance(quiz_id=i, user_id=j, is_active=1, score_achieved=None, is_submitted=0)
+                    db.session.add(q)
+            db.session.commit()
+            return  {"message": 'Quiz Assigned successfully'}, 200
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 api.add_resource(AssignQuizAPI, '/assign.quiz')
 docs.register(AssignQuizAPI)
-
+"""JSON FORMAT
+{
+    "user_id":[2,3],
+    "quiz_id":[1,2]
+}
+"""
 """
 [View Quiz API] : Its responsibility is to view the quiz details.
 Only Admin and the assigned users to this quiz can access the quiz details.
 """
 class ViewQuizAPI(MethodResource, Resource):
-    pass
-
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        user_id = UserMaster.query.filter_by(username=session['username']).first().user_id
+        li = []
+        li = QuizInstance.query.filter_by(user_id=user_id)
+        Flag = False
+        for i in li:
+            if int(i.quiz_id) == request.json['quiz_id']:
+                Flag = True 
+                break 
+        if Flag == True:
+            quiz_name = QuizMaster.query.filter_by(quiz_id=request.json['quiz_id']).first().quiz_name
+            li_1 = QuizQuestions.query.filter_by(quiz_id=request.json['quiz_id'])
+            li_2 = []
+            for i in li_1:
+                li_2.append(i.question_id)
+            params = []
+            for j in li_2:
+                m = QuestionMaster.query.filter_by(question_id=j).first() 
+                question_info = {"question_id":m.question_id, "question":m.question, "choice1":m.choice1, "choice2":m.choice2, "choice3":m.choice3, "choice4":m.choice4, "marks":m.marks}
+                
+                params.append(question_info) 
+            return {"Quiz Name":quiz_name, "Quiz Questions":params}, 200
+        else: 
+            return {"message": 'This quiz is not assigned to you'}, 404
 
 api.add_resource(ViewQuizAPI, '/view.quiz')
 docs.register(ViewQuizAPI)
-
+"""
+{
+    "quiz_id":1
+}
+"""
 """
 [View Assigned Quiz API] : Its responsibility is to list all the assigned quizzes 
                             with there submittion status and achieved scores.
 """
 class ViewAssignedQuizAPI(MethodResource, Resource):
-    pass
+    def get(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        user_id = UserMaster.query.filter_by(username=session['username']).first().user_id
+        l = QuizInstance.query.filter_by(user_id=user_id)
+        params = []
+        
+        for i in l:
+            quiz_name = QuizMaster.query.filter_by(quiz_id=i.quiz_id).first().quiz_name
+            if i.is_submitted == 0:
+                submitted = 'no'
+            else:
+                submitted = 'yes'
+            quiz = {"quiz_id":i.quiz_id, "quiz_name":quiz_name, "score_achieved":i.score_achieved, "is_submitted":submitted}
+            params.append(quiz)
 
-
+        if len(params) == 0:
+            return {"message": "Quiz not Assigned"}, 404
+        return {"Assigned Quizes":params}, 200
 api.add_resource(ViewAssignedQuizAPI, '/assigned.quizzes')
 docs.register(ViewAssignedQuizAPI)
 
