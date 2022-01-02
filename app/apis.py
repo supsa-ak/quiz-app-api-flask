@@ -11,8 +11,14 @@ from app.services import *
 """
 #  Restful way of creating APIs through Flask Restful
 class SignUpAPI(MethodResource, Resource):
-    pass
-            
+    def post(self):
+        try:
+            c = Customer(name=request.json['name'], username=request.json['username'], password=request.json['password'], level=request.json['level'])
+            db.session.add(c)
+            db.session.commit()
+            return {"message": 'customer created with name '+request.json['name']}, 201
+        except:
+            return {'message': 'Something went wrong'}
 
 api.add_resource(SignUpAPI, '/signup')
 docs.register(SignUpAPI)
@@ -22,7 +28,7 @@ docs.register(SignUpAPI)
 create session id which will be used for all subsequent operations.
 """
 class LoginAPI(MethodResource, Resource):
-    pass
+
             
 
 api.add_resource(LoginAPI, '/login')

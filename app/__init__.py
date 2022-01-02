@@ -1,8 +1,9 @@
-from flask import Flask
+from flask import Flask, session
 from apispec import APISpec
 from flask_restful import Api
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask_apispec.extension import FlaskApiSpec
+from flask_session import Session
 
 """
 Initialiasing application instance with Flask Framework and applying secret key to the application
@@ -13,6 +14,12 @@ application.secret_key = 'quiz-portal-12345'
 """
 Thsi will configure the swagger docs for the application
 """
+from app.models import *
+
+application.config['SESSION_TYPE'] = 'sqlalchemy'
+application.config['SESSION_SQLALCHEMY'] = db
+
+sess = Session(application)
 api = Api(application)  # Flask restful wraps Flask app around it.
 
 application.config.update({
@@ -27,7 +34,6 @@ application.config.update({
 })
 docs = FlaskApiSpec(application)
 
-# from app.models import *
 
 # try:
 #     add_questions()
