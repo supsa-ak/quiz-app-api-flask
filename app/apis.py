@@ -246,7 +246,7 @@ class ViewQuizAPI(MethodResource, Resource):
                 question_info = {"question_id":m.question_id, "question":m.question, "choice1":m.choice1, "choice2":m.choice2, "choice3":m.choice3, "choice4":m.choice4, "marks":m.marks}
                 
                 params.append(question_info) 
-            return {"Quiz Name":quiz_name, "Quiz Questions":params}, 200
+            return {"quiz_id":request.json['quiz_id'], "Quiz Name":quiz_name, "Quiz Questions":params}, 200
         else: 
             return {"message": 'This quiz is not assigned to you'}, 404
 
@@ -291,7 +291,22 @@ docs.register(ViewAssignedQuizAPI)
 [View All Quiz API] : Its responsibility is to list all the created quizzes. Admin can only list all quizzes.
 """
 class ViewAllQuizAPI(MethodResource, Resource):
-    pass
+    def get(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        uname = session['username'] 
+        user_info = UserMaster.query.filter_by(username=uname).first()
+        if user_info.is_admin == 1:
+            quizes = QuizMaster.query.all()
+            params = []
+            for i in quizes:
+                q_info = {"quiz_id":i.quiz_id, "quiz_name":i.quiz_name,"created_ts":i.created_ts,"updated_ts":i.updated_ts}
+                params.append(q_info)
+            return params, 200
+        else:
+            return {"message": 'Don\'t have required privileges'}, 404
 
 
 api.add_resource(ViewAllQuizAPI, '/all.quizzes')
@@ -302,12 +317,47 @@ docs.register(ViewAllQuizAPI)
                         the user and the score will be shown as a result of the submitted attempt.
 """
 class AttemptQuizAPI(MethodResource, Resource):
-    pass
-
+    def post(self):
+        if session['username']:
+            pass
+        else:
+            return {"message": 'Login Required'}
+        user_id = UserMaster.query.filter_by(username=session['username']).first().user_id
+        
+        li = QuizInstance.query.filter_by(user_id=str(user_id), quiz_id=str(request.json['quiz_id'])).first()
+        Flag = False 
+        if (int(li.quiz_id) == int(request.json['quiz_id'])) and (int(user_id) == int(li.user_id)):
+            if li.is_submitted == 0:
+                Flag = True 
+            else:
+                return  {"message": 'Quiz is already Submitted'}, 404
+        else:
+            return {"message": 'This quiz is not assigned to you'}, 404
+        if Flag == True:
+            total_marks = 0
+            for i in request.json['quiz_answers']:
+                c = UserResponses(quiz_id=request.json['quiz_id'], user_id=user_id, question_id=i['question_id'], response=i['answer'], is_active=1)
+                db.session.add(c)
+                if QuestionMaster.query.filter_by(question_id=i['question_id']).first().answer == i['answer']:
+                    total_marks += QuestionMaster.query.filter_by(question_id=i['question_id']).first().marks
+            li.score_achieved = total_marks
+            li.is_submitted = 1
+            db.session.commit()
+            return {"total_marks": total_marks, "message":"Quiz Submitted Successfully"}
 
 api.add_resource(AttemptQuizAPI, '/attempt.quiz')
 docs.register(AttemptQuizAPI)
-
+"""
+{
+    "quiz_id":1,
+    "quiz_answers":[
+        {"question_id":2,"answer":2},
+        {"question_id":3,"answer":4},
+        {"question_id":4,"answer":3},
+        {"question_id":6,"answer":3}
+    ]
+}
+"""
 """
 [Quiz Results API] : Its responsibility is to provide the quiz results in which the users 
                         having the scores sorted in descending order are displayed, 

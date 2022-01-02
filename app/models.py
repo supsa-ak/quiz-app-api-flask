@@ -126,11 +126,12 @@ class UserResponses(db.Model):
         created_ts = db.Column(db.DateTime, default=db.func.current_timestamp())
         updated_ts = db.Column(db.DateTime, default=db.func.current_timestamp(), server_onupdate=db.func.current_timestamp())
 
-        def __init__(self, quiz_id, user_id, question_id, response):
+        def __init__(self, quiz_id, user_id, question_id, response, is_active):
                 self.quiz_id = quiz_id
                 self.user_id = user_id
                 self.question_id = question_id
                 self.response = response        
+                self.is_active = is_active
     
 db.create_all()
 db.session.commit()
