@@ -119,8 +119,8 @@ docs.register(AddQuestionAPI)
     "choice2":"car",
     "choice3":"animal",
     "choice4":"plant",
-    "answer":"1",
-    "marks":"5",
+    "answer":1,
+    "marks":5,
     "remarks":"computer is machine"
 }
 """
